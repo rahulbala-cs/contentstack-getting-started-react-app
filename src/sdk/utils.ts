@@ -33,6 +33,7 @@ const getHostByRegion = (region: string) => {
 	}
 };
 
+// This function should be called only ONCE in the application
 export const initializeContentstackSdk = () => {
 	const {
 		REACT_APP_CONTENTSTACK_API_KEY,
@@ -42,17 +43,9 @@ export const initializeContentstackSdk = () => {
 		REACT_APP_CONTENTSTACK_PREVIEW_TOKEN
 	} = process.env;
 
-	// DEBUG: Check if all required env variables are set
-	console.log('🔍 DEBUG SDK Init - Environment Variables:');
-	console.log('API_KEY:', REACT_APP_CONTENTSTACK_API_KEY ? '✅ Set' : '❌ Missing');
-	console.log('DELIVERY_TOKEN:', REACT_APP_CONTENTSTACK_DELIVERY_TOKEN ? '✅ Set' : '❌ Missing');
-	console.log('PREVIEW_TOKEN:', REACT_APP_CONTENTSTACK_PREVIEW_TOKEN ? '✅ Set' : '❌ Missing');
-	console.log('ENVIRONMENT:', REACT_APP_CONTENTSTACK_ENVIRONMENT ? '✅ Set' : '❌ Missing');
-	console.log('REGION:', REACT_APP_CONTENTSTACK_REGION ? '✅ Set' : '❌ Missing');
-
 	const region: Contentstack.Region | undefined = (function (
 		regionValue: string
-	) {
+	): Contentstack.Region | undefined {
 		switch (regionValue) {
 			case "US":
 				return Contentstack.Region.US;
@@ -71,8 +64,7 @@ export const initializeContentstackSdk = () => {
 
 	if (!region) {
 		throw new Error(
-			"Invalid region provided in REACT_APP_CONTENTSTACK_REGION. Valid values are: " +
-				Object.keys(Contentstack.Region).join(", ")
+			"Invalid region provided in REACT_APP_CONTENTSTACK_REGION."
 		);
 	}
 
@@ -88,34 +80,6 @@ export const initializeContentstackSdk = () => {
 		}
 	});
 
-	console.log('✅ Contentstack SDK initialized with Live Preview enabled');
-
-	// CRITICAL: Apply Live Preview Query if URL parameters are present
-	const urlParams = new URLSearchParams(window.location.search);
-	const isLivePreview = urlParams.has('live_preview') || urlParams.has('content_type_uid') || urlParams.has('entry_uid');
-	
-	if (isLivePreview) {
-		console.log('🎯 Live Preview Mode Detected - Applying livePreviewQuery');
-		console.log('🎯 Live Preview Query params:', Object.fromEntries(urlParams.entries()));
-		
-		// Properly structure the live preview query
-		const livePreviewQuery = {
-			live_preview: urlParams.get('live_preview') || 'true',
-			content_type_uid: urlParams.get('content_type_uid') || '',
-			entry_uid: urlParams.get('entry_uid') || '',
-			locale: urlParams.get('locale') || 'en-us'
-		};
-		
-		console.log('🎯 Structured Live Preview Query:', livePreviewQuery);
-		
-		// Apply live preview query to the stack
-		Stack.livePreviewQuery(livePreviewQuery);
-		console.log('✅ Live Preview Query applied to Stack');
-	} else {
-		console.log('ℹ️ Regular mode - No Live Preview parameters detected');
-	}
-
-	// Initialize Live Preview Utils with proper configuration
 	ContentstackLivePreview.init({
 		stackSdk: Stack,
 		stackDetails: {
@@ -127,82 +91,34 @@ export const initializeContentstackSdk = () => {
 		},
 		enable: true,
 		debug: process.env.NODE_ENV === 'development',
-		tagsAsObject: true, // Essential for React apps to get $ object format
+		tagsAsObject: true,
 	} as any);
-
-	// DEBUG: Check if we're in Live Preview mode
-	console.log('🔍 DEBUG Live Preview State:');
-	console.log('Current URL:', window.location.href);
-	console.log('URL Search Params:', window.location.search);
-	console.log('Is Live Preview?', isLivePreview);
-	console.log('Has content_type_uid?', urlParams.has('content_type_uid'));
-	console.log('Has entry_uid?', urlParams.has('entry_uid'));
-	
-	// Check if ContentstackLivePreview has any state methods
-	console.log('Live Preview SDK methods:', Object.getOwnPropertyNames(ContentstackLivePreview));
-
-	console.log('✅ Live Preview Utils SDK initialized with tagsAsObject: true');
 
 	return Stack;
 };
 
-// Live Preview utilities
 export const onEntryChange = ContentstackLivePreview.onEntryChange;
 
-// Utility function to check if we're in Live Preview mode
-export const isLivePreviewMode = (): boolean => {
-	const urlParams = new URLSearchParams(window.location.search);
-	return urlParams.has('live_preview') || urlParams.has('content_type_uid') || urlParams.has('entry_uid');
-};
+// The one and only Stack instance for the app
+const Stack = initializeContentstackSdk();
+export default Stack;
 
-// Utility function to get Live Preview query parameters
-export const getLivePreviewQuery = () => {
-	const urlParams = new URLSearchParams(window.location.search);
-	return {
-		live_preview: urlParams.get('live_preview') || 'true',
-		content_type_uid: urlParams.get('content_type_uid') || '',
-		entry_uid: urlParams.get('entry_uid') || '',
-		locale: urlParams.get('locale') || 'en-us'
-	};
-};
-
-// Function to refresh Live Preview context (useful for route changes)
-export const refreshLivePreviewContext = () => {
-	if (isLivePreviewMode()) {
-		console.log('🔄 Refreshing Live Preview context');
-		const livePreviewQuery = getLivePreviewQuery();
-		console.log('🔄 Applying Live Preview query:', livePreviewQuery);
-		// Re-initialize stack with current Live Preview parameters
-		const Stack = initializeContentstackSdk();
-		return Stack;
-	}
-	return null;
-};
-
-// Helper function to safely get edit tags from the $ object
+// Corrected getEditTags function
 export const getEditTags = (data: any, fieldPath?: string) => {
-	// If no $ object is present, we're not in Live Preview context
 	if (!data?.$) {
 		return {};
 	}
-	
-	// If no field path is provided, return the tags for the entry itself
 	if (!fieldPath) {
 		return data.$ || {};
 	}
-	
-	// Resolve the field path to get the correct nested edit tags
 	const pathParts = fieldPath.split('.');
 	let current = data.$;
-	
 	for (const part of pathParts) {
 		if (current && typeof current === 'object' && part in current) {
 			current = current[part];
 		} else {
-			// If the path doesn't exist, return no tags
 			return {};
 		}
 	}
-	
 	return current || {};
 };

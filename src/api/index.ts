@@ -4,27 +4,12 @@ import {
   setFooterData,
   setHeaderData,
   setHomePageData,
-  // COMMENT: Uncomment below line
   setMenuPageData,
 } from "../reducer";
-import { initializeContentstackSdk, isLivePreviewMode, refreshLivePreviewContext } from "../sdk/utils";
+import Stack from "../sdk/utils"; // <-- Use the single, shared Stack instance
 import * as Utils from "@contentstack/utils";
 
-// Initialize Stack - this will be Live Preview aware
-let Stack = initializeContentstackSdk();
-
-// Function to get Live Preview aware Stack instance
-const getStack = () => {
-  if (isLivePreviewMode()) {
-    console.log('🎯 Using Live Preview enabled Stack instance');
-    // Refresh Live Preview context to ensure latest parameters
-    const livePreviewStack = refreshLivePreviewContext();
-    if (livePreviewStack) {
-      return livePreviewStack;
-    }
-  }
-  return Stack;
-};
+// All references to `getStack()` are removed, as we now use the shared `Stack` instance.
 
 type GetEntryByUrl = {
   entryUrl: string | undefined;
@@ -38,16 +23,14 @@ const renderOption = {
 };
 
 export const getEntry = (contentType: string) => {
-  const LivePreviewStack = getStack();
-  const Query = LivePreviewStack.ContentType(contentType).Query();
+  const Query = Stack.ContentType(contentType).Query();
   return Query.toJSON()
     .find()
     .then((entry) => {
-      console.log(`📦 Fetched ${contentType} with Live Preview context:`, entry);
       return entry;
     })
     .catch((err: any) => {
-      console.error(`❌ Error fetching ${contentType}:`, err);
+      console.error(err);
       return {};
     });
 };
@@ -59,14 +42,12 @@ export const getEntryByUrl = ({
   jsonRtePath,
 }: GetEntryByUrl) => {
   return new Promise((resolve, reject) => {
-    const LivePreviewStack = getStack();
-    const blogQuery = LivePreviewStack.ContentType(contentTypeUid).Query();
+    const blogQuery = Stack.ContentType(contentTypeUid).Query();
     if (referenceFieldPath) blogQuery.includeReference(referenceFieldPath);
     blogQuery.toJSON();
     const data = blogQuery.where("url", `${entryUrl}`).find();
     data.then(
       (result) => {
-        console.log(`📦 Fetched entry by URL (${entryUrl}) with Live Preview context:`, result);
         jsonRtePath &&
           Utils.jsonToHTML({
             entry: result,
@@ -76,7 +57,7 @@ export const getEntryByUrl = ({
         resolve(result[0]);
       },
       (error) => {
-        console.error(`❌ Error fetching entry by URL (${entryUrl}):`, error);
+        console.error(error);
         reject(error);
       }
     );
