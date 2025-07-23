@@ -6,7 +6,7 @@ import { RootState } from "../../store";
 import { LoadingSkeleton } from "../LoadingSkeleton";
 //COMMENT: Uncomment below 2 import statements
 
-import { TMenu, TDishes } from "../../types";
+import { TMenu } from "../../types";
 import { fetchMenuPageData } from "../../api";
 import { getEditTags } from "../../sdk/utils";
 
