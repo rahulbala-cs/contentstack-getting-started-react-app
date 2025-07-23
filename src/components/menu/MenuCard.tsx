@@ -1,41 +1,39 @@
 import React from "react";
-// COMMENT: Uncomment below import statement
-// import { TDishes } from "../../types";
+import { TDishes, TMenu } from "../../types";
+import { getEditTags } from "../../sdk/utils";
 
-// COMMENT: Replace any[] with TDishes[]
-const MenuCard: React.FC<{ data: any[] }> = ({ data }) => {
+interface MenuCardProps {
+  data: TDishes[];
+  courseData?: TMenu;
+}
+
+const MenuCard: React.FC<MenuCardProps> = ({ data, courseData }) => {
   return (
     <div className="menu-card">
       {data ? (
-        // COMMENT: Replace any with TDishes
-        data.map((menuItem: any) => (
-          <div className="menu-card-item">
+        data.map((menuItem: TDishes, index: number) => (
+          <div 
+            key={`dish-${index}`}
+            className="menu-card-item"
+            {...getEditTags(menuItem)}
+          >
             <div
               style={{
                 background: `url(${menuItem.image.url}) lightgray 50% / cover no-repeat`,
                 height: "320px",
                 alignSelf: "stretch",
               }}
-            ></div>
-            <div className="item-content">
-              <div className="item-content-text">
-                <span className="price">${menuItem.price}</span>
-                <p>{menuItem.title}</p>
-                <span className="description">{menuItem.description}</span>
-              </div>
-              <hr
-                style={{
-                  width: "80px",
-                  height: "2px",
-                  backgroundColor: "#2D00FF",
-                  border: "none",
-                }}
-              />
+              {...getEditTags(menuItem, `image`)}
+            />
+            <div className="menu-card-content">
+              <h2 {...getEditTags(menuItem, 'title')}>{menuItem.title}</h2>
+              <p {...getEditTags(menuItem, 'description')}>{menuItem.description}</p>
+              <h3 {...getEditTags(menuItem, 'price')}>{`$ ${menuItem.price}`}</h3>
             </div>
           </div>
         ))
       ) : (
-        <></>
+        <p>No dishes available for this course.</p>
       )}
     </div>
   );

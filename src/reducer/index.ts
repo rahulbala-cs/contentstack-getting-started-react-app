@@ -12,6 +12,7 @@ interface AppState {
 
 const initialState: AppState = {
   headerData: {
+    uid: '',
     website_title: "",
     logo: {
       url: "",
@@ -26,6 +27,7 @@ const initialState: AppState = {
     },
   },
   footerData: {
+    uid: '',
     title: "",
     navigation_links: {
       title: "",
@@ -47,6 +49,7 @@ const initialState: AppState = {
     copyright: "",
   },
   homePageData: {
+    uid: '',
     sections: [
       {
         home: {
@@ -62,23 +65,8 @@ const initialState: AppState = {
       },
     ],
   },
-  // COMMENT: Uncomment below lines
-  menuPageData: [
-    {
-      course_name: "",
-      dishes: [
-        {
-          uid: "",
-          image: {
-            url: "",
-          },
-          title: "",
-          description: "",
-          price: 0,
-        },
-      ],
-    },
-  ],
+  // COMMENT: Uncomment below line
+   menuPageData: [],
 };
 
 const mainSlice = createSlice({

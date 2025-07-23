@@ -1,3 +1,4 @@
+import { onEntryChange } from "../sdk/utils";
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "../components/header/Header";
@@ -15,7 +16,9 @@ const AppRoutes: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchInitialData(dispatch, setLoading);
+    onEntryChange(() => {
+      fetchInitialData(dispatch, setLoading);
+    });
   }, [dispatch]);
 
   return (

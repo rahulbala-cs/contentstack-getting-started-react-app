@@ -1,4 +1,29 @@
-export type THeaderData = {
+// Base Contentstack entry type with metadata
+export type TContentstackEntry = {
+  uid: string;
+  locale?: string;
+  _version?: number;
+  _in_progress?: boolean;
+  created_at?: string;
+  created_by?: string;
+  updated_at?: string;
+  updated_by?: string;
+  ACL?: Record<string, any>;
+  tags?: string[];
+  _content_type_uid?: string;
+  publish_details?: {
+    time: string;
+    user: string;
+    environment: string;
+    locale: string;
+  };
+  title?: string;
+  $?: Record<string, any>; // Live Preview edit tags
+  _metadata?: Record<string, any>;
+  [key: string]: any; // Allow additional fields
+};
+
+export type THeaderData = TContentstackEntry & {
   website_title: string;
   logo: {
     url: string;
@@ -11,7 +36,7 @@ export type THeaderData = {
   };
 };
 
-export type TFooterData = {
+export type TFooterData = TContentstackEntry & {
   title: string;
 
   navigation_links?: {
@@ -31,7 +56,7 @@ export type TFooterData = {
   copyright?: string;
 };
 
-export type THomePageData = {
+export type THomePageData = TContentstackEntry & {
   sections: {
     home: {
       hero_section?: {
@@ -53,8 +78,7 @@ export type TLink = {
 
 //COMMENT: Uncomment below lines
 
-export type TDishes = {
-  uid: string;
+export type TDishes = TContentstackEntry & {
   image: {
     url: string;
   };
@@ -63,7 +87,7 @@ export type TDishes = {
   price: number;
 };
 
-export type TMenu = {
+export type TMenu = TContentstackEntry & {
   course_name: string;
   dishes: TDishes[];
 };
