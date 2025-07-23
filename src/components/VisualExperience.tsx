@@ -1,359 +1,268 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  timelineUtils, 
-  visualBuilderUtils, 
-  audiencePreviewUtils, 
-  devicePreviewUtils 
-} from '../sdk/utils';
+import { getLivePreviewStatus, isLivePreviewEnabled } from '../sdk/utils';
 
-interface VisualExperienceProps {
+interface LivePreviewStatusProps {
   isEnabled?: boolean;
 }
 
-const VisualExperience: React.FC<VisualExperienceProps> = ({ isEnabled = true }) => {
-  const [currentDevice, setCurrentDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
-  const [timelineDate, setTimelineDate] = useState<Date>(new Date());
-  const [editMode, setEditMode] = useState<'inspector' | 'inline' | 'all'>('all');
-  const [isTimelineEnabled, setIsTimelineEnabled] = useState(false);
-  const [isVisualBuilderEnabled, setIsVisualBuilderEnabled] = useState(false);
+const LivePreviewStatus: React.FC<LivePreviewStatusProps> = ({ isEnabled = true }) => {
+  const [status, setStatus] = useState(getLivePreviewStatus());
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (!isEnabled) return;
 
-    // Initialize Visual Experience features
-    const initializeVisualExperience = () => {
-      // Check for available features
-      const hasTimeline = (window as any).__CONTENTSTACK_TIMELINE_ENABLED__;
-      const hasVisualBuilder = (window as any).__CONTENTSTACK_VISUAL_BUILDER_ENABLED__;
-      const hasAudiencePreview = (window as any).__CONTENTSTACK_AUDIENCE_PREVIEW_ENABLED__;
+    // Update status every 5 seconds
+    const interval = setInterval(() => {
+      setStatus(getLivePreviewStatus());
+    }, 5000);
 
-      console.log('Visual Experience Features:', {
-        timeline: hasTimeline,
-        visualBuilder: hasVisualBuilder,
-        audiencePreview: hasAudiencePreview
-      });
+    // Check if Live Preview is active
+    setIsVisible(isLivePreviewEnabled() || status.isInitialized);
 
-      // Set up event listeners for device changes
-      const handleDeviceChange = (event: CustomEvent) => {
-        setCurrentDevice(event.detail.device);
-      };
+    return () => clearInterval(interval);
+  }, [isEnabled, status.isInitialized]);
 
-      window.addEventListener('contentstack:device-change', handleDeviceChange as EventListener);
-
-      return () => {
-        window.removeEventListener('contentstack:device-change', handleDeviceChange as EventListener);
-      };
-    };
-
-    initializeVisualExperience();
-  }, [isEnabled]);
-
-  const handleDeviceChange = (device: 'mobile' | 'tablet' | 'desktop') => {
-    setCurrentDevice(device);
-    devicePreviewUtils.setDevice(device);
-  };
-
-  const handleTimelineToggle = (enabled: boolean) => {
-    setIsTimelineEnabled(enabled);
-    timelineUtils.toggleTimeline(enabled);
-  };
-
-  const handleVisualBuilderToggle = (enabled: boolean) => {
-    setIsVisualBuilderEnabled(enabled);
-    visualBuilderUtils.toggleVisualBuilder(enabled);
-  };
-
-  const handleEditModeChange = (mode: 'inspector' | 'inline' | 'all') => {
-    setEditMode(mode);
-    visualBuilderUtils.setEditMode(mode);
-  };
-
-  const handleTimelineDate = (date: Date) => {
-    setTimelineDate(date);
-    timelineUtils.setTimelineDate(date);
-  };
-
-  if (!isEnabled) {
+  // Only show in development or when Live Preview is active
+  if (!isVisible && process.env.NODE_ENV === 'production') {
     return null;
   }
 
   return (
-    <div className="visual-experience-panel">
-      <div className="visual-experience-header">
-        <h3>🎨 Visual Experience</h3>
-        <p>Complete Live Preview, Timeline & Visual Builder</p>
-      </div>
-
-      {/* Device Preview Controls */}
-      <div className="device-preview-controls">
-        <h4>📱 Device Preview</h4>
-        <div className="device-buttons">
-          {(['mobile', 'tablet', 'desktop'] as const).map((device) => (
-            <button
-              key={device}
-              className={`device-btn ${currentDevice === device ? 'active' : ''}`}
-              onClick={() => handleDeviceChange(device)}
-            >
-              {device === 'mobile' ? '📱' : device === 'tablet' ? '📱' : '🖥️'} {device}
-            </button>
-          ))}
-        </div>
+    <div className="live-preview-status">
+      <div className="live-preview-header">
+        <h3>🔍 Live Preview Status</h3>
         <button 
-          className="orientation-btn"
-          onClick={() => devicePreviewUtils.toggleOrientation()}
+          onClick={() => setIsVisible(!isVisible)}
+          className="toggle-button"
         >
-          🔄 Toggle Orientation
+          {isVisible ? '−' : '+'}
         </button>
       </div>
-
-      {/* Timeline Controls */}
-      <div className="timeline-controls">
-        <h4>⏰ Timeline Preview</h4>
-        <div className="timeline-toggle">
-          <label>
-            <input
-              type="checkbox"
-              checked={isTimelineEnabled}
-              onChange={(e) => handleTimelineToggle(e.target.checked)}
-            />
-            Enable Timeline Mode
-          </label>
-        </div>
-        {isTimelineEnabled && (
-          <div className="timeline-date-picker">
-            <label>
-              Preview Date:
-              <input
-                type="datetime-local"
-                value={timelineDate.toISOString().slice(0, 16)}
-                onChange={(e) => handleTimelineDate(new Date(e.target.value))}
-              />
-            </label>
+      
+      {isVisible && (
+        <div className="live-preview-content">
+          <div className="status-grid">
+            <div className="status-item">
+              <span className="label">SDK Initialized:</span>
+              <span className={`status ${status.isInitialized ? 'success' : 'error'}`}>
+                {status.isInitialized ? '✅' : '❌'}
+              </span>
+            </div>
+            
+            <div className="status-item">
+              <span className="label">In Preview Mode:</span>
+              <span className={`status ${status.isInIframe ? 'success' : 'warning'}`}>
+                {status.isInIframe ? '✅' : '⚠️'}
+              </span>
+            </div>
+            
+            <div className="status-item">
+              <span className="label">Live Preview Param:</span>
+              <span className={`status ${status.hasLivePreviewParam ? 'success' : 'warning'}`}>
+                {status.hasLivePreviewParam ? '✅' : '⚠️'}
+              </span>
+            </div>
+            
+            <div className="status-item">
+              <span className="label">Preview Token Set:</span>
+              <span className={`status ${status.hasPreviewToken ? 'success' : 'error'}`}>
+                {status.hasPreviewToken ? '✅' : '❌'}
+              </span>
+            </div>
+            
+            <div className="status-item">
+              <span className="label">Content Type UID:</span>
+              <span className={`status ${status.hasContentTypeParam ? 'success' : 'info'}`}>
+                {status.hasContentTypeParam ? '✅' : 'ℹ️'}
+              </span>
+            </div>
+            
+            <div className="status-item">
+              <span className="label">Entry UID:</span>
+              <span className={`status ${status.hasEntryParam ? 'success' : 'info'}`}>
+                {status.hasEntryParam ? '✅' : 'ℹ️'}
+              </span>
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* Visual Builder Controls */}
-      <div className="visual-builder-controls">
-        <h4>🔧 Visual Builder</h4>
-        <div className="visual-builder-toggle">
-          <label>
-            <input
-              type="checkbox"
-              checked={isVisualBuilderEnabled}
-              onChange={(e) => handleVisualBuilderToggle(e.target.checked)}
-            />
-            Enable Visual Builder
-          </label>
-        </div>
-        
-        <div className="edit-mode-selector">
-          <h5>Edit Mode:</h5>
-          {(['inspector', 'inline', 'all'] as const).map((mode) => (
-            <label key={mode}>
-              <input
-                type="radio"
-                name="editMode"
-                value={mode}
-                checked={editMode === mode}
-                onChange={() => handleEditModeChange(mode)}
-              />
-              {mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </label>
-          ))}
-        </div>
-
-        {isVisualBuilderEnabled && (
-          <div className="visual-builder-actions">
-            <button onClick={() => visualBuilderUtils.enableDragDrop(true)}>
-              🖱️ Enable Drag & Drop
-            </button>
+          
+          <div className="debug-info">
+            <h4>Debug Information</h4>
+            <div className="debug-item">
+              <strong>Current URL:</strong>
+              <code>{status.currentURL}</code>
+            </div>
+            <div className="debug-item">
+              <strong>SDK Status:</strong>
+              <code>
+                {status.isInitialized ? 'Active' : 'Not Initialized'}
+              </code>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Audience Preview Controls */}
-      <div className="audience-preview-controls">
-        <h4>👥 Audience Preview</h4>
-        <div className="audience-selector">
-          <select 
-            onChange={(e) => audiencePreviewUtils.setAudience(e.target.value)}
-            defaultValue=""
-          >
-            <option value="">Select Audience</option>
-            <option value="mobile-users">Mobile Users</option>
-            <option value="desktop-users">Desktop Users</option>
-            <option value="premium-customers">Premium Customers</option>
-            <option value="new-visitors">New Visitors</option>
-          </select>
-        </div>
-        <button 
-          onClick={() => audiencePreviewUtils.enablePersonalization(true)}
-          className="personalization-btn"
-        >
-          🎯 Enable Personalization
-        </button>
-      </div>
-
-      {/* Feature Status */}
-      <div className="feature-status">
-        <h4>📊 Feature Status</h4>
-        <div className="status-indicators">
-          <div className={`status-item ${(window as any).__CONTENTSTACK_LIVE_PREVIEW_INITIALIZED__ ? 'enabled' : 'disabled'}`}>
-            ✅ Live Preview: {(window as any).__CONTENTSTACK_LIVE_PREVIEW_INITIALIZED__ ? 'Active' : 'Inactive'}
-          </div>
-          <div className={`status-item ${(window as any).__CONTENTSTACK_TIMELINE_ENABLED__ ? 'enabled' : 'disabled'}`}>
-            ⏰ Timeline: {(window as any).__CONTENTSTACK_TIMELINE_ENABLED__ ? 'Available' : 'Unavailable'}
-          </div>
-          <div className={`status-item ${(window as any).__CONTENTSTACK_VISUAL_BUILDER_ENABLED__ ? 'enabled' : 'disabled'}`}>
-            🔧 Visual Builder: {(window as any).__CONTENTSTACK_VISUAL_BUILDER_ENABLED__ ? 'Available' : 'Unavailable'}
-          </div>
-          <div className={`status-item ${(window as any).__CONTENTSTACK_AUDIENCE_PREVIEW_ENABLED__ ? 'enabled' : 'disabled'}`}>
-            👥 Audience Preview: {(window as any).__CONTENTSTACK_AUDIENCE_PREVIEW_ENABLED__ ? 'Available' : 'Unavailable'}
+          <div className="instructions">
+            <h4>🔧 Troubleshooting</h4>
+            <ul>
+              {!status.isInitialized && (
+                <li>SDK not initialized - check console for errors</li>
+              )}
+              {!status.hasPreviewToken && (
+                <li>Preview token missing - set REACT_APP_CONTENTSTACK_PREVIEW_TOKEN</li>
+              )}
+              {!status.isInIframe && (
+                <li>Not in preview mode - open from Contentstack Live Preview</li>
+              )}
+              {!status.hasLivePreviewParam && status.isInIframe && (
+                <li>Missing live_preview URL parameter</li>
+              )}
+            </ul>
           </div>
         </div>
-      </div>
-
+      )}
+      
       <style>{`
-        .visual-experience-panel {
+        .live-preview-status {
           position: fixed;
           top: 20px;
           right: 20px;
-          width: 320px;
+          width: 350px;
           background: white;
-          border: 1px solid #ddd;
+          border: 2px solid #2563eb;
           border-radius: 8px;
-          padding: 16px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          z-index: 1000;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 10000;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-size: 14px;
           max-height: 80vh;
           overflow-y: auto;
         }
 
-        .visual-experience-header {
-          margin-bottom: 16px;
-          border-bottom: 1px solid #eee;
-          padding-bottom: 12px;
-        }
-
-        .visual-experience-header h3 {
-          margin: 0 0 4px 0;
-          color: #333;
-          font-size: 16px;
-        }
-
-        .visual-experience-header p {
-          margin: 0;
-          color: #666;
-          font-size: 12px;
-        }
-
-        .device-preview-controls,
-        .timeline-controls,
-        .visual-builder-controls,
-        .audience-preview-controls,
-        .feature-status {
-          margin-bottom: 16px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid #f0f0f0;
-        }
-
-        .device-preview-controls h4,
-        .timeline-controls h4,
-        .visual-builder-controls h4,
-        .audience-preview-controls h4,
-        .feature-status h4 {
-          margin: 0 0 8px 0;
-          font-size: 14px;
-          color: #555;
-        }
-
-        .device-buttons {
+        .live-preview-header {
           display: flex;
-          gap: 8px;
-          margin-bottom: 8px;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          background: #2563eb;
+          color: white;
+          border-radius: 6px 6px 0 0;
         }
 
-        .device-btn,
-        .orientation-btn,
-        .personalization-btn,
-        .visual-builder-actions button {
-          padding: 6px 12px;
-          border: 1px solid #ddd;
+        .live-preview-header h3 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .toggle-button {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          width: 24px;
+          height: 24px;
           border-radius: 4px;
-          background: white;
           cursor: pointer;
-          font-size: 12px;
-          transition: all 0.2s;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        .device-btn.active,
-        .device-btn:hover,
-        .orientation-btn:hover,
-        .personalization-btn:hover,
-        .visual-builder-actions button:hover {
-          background: #f0f7ff;
-          border-color: #007acc;
+        .toggle-button:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
-        .timeline-toggle,
-        .visual-builder-toggle {
-          margin-bottom: 8px;
+        .live-preview-content {
+          padding: 16px;
         }
 
-        .timeline-date-picker label,
-        .edit-mode-selector label {
-          display: block;
-          margin: 4px 0;
-          font-size: 12px;
-        }
-
-        .timeline-date-picker input,
-        .audience-selector select {
-          width: 100%;
-          padding: 4px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 12px;
-        }
-
-        .edit-mode-selector {
-          margin: 8px 0;
-        }
-
-        .edit-mode-selector h5 {
-          margin: 0 0 4px 0;
-          font-size: 12px;
-          color: #666;
-        }
-
-        .status-indicators {
-          font-size: 11px;
+        .status-grid {
+          display: grid;
+          gap: 8px;
+          margin-bottom: 16px;
         }
 
         .status-item {
-          padding: 4px 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 12px;
+          background: #f8fafc;
+          border-radius: 4px;
+          border-left: 3px solid #e2e8f0;
         }
 
-        .status-item.enabled {
-          color: #0c7c0c;
+        .label {
+          font-weight: 500;
+          color: #374151;
         }
 
-        .status-item.disabled {
-          color: #999;
+        .status.success {
+          color: #059669;
         }
 
-        .visual-builder-actions {
-          margin-top: 8px;
+        .status.error {
+          color: #dc2626;
         }
 
-        .audience-selector {
+        .status.warning {
+          color: #d97706;
+        }
+
+        .status.info {
+          color: #2563eb;
+        }
+
+        .debug-info {
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .debug-info h4 {
+          margin: 0 0 12px 0;
+          color: #374151;
+          font-size: 14px;
+        }
+
+        .debug-item {
           margin-bottom: 8px;
+        }
+
+        .debug-item code {
+          background: #f3f4f6;
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-size: 12px;
+          word-break: break-all;
+          display: block;
+          margin-top: 4px;
+        }
+
+        .instructions {
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .instructions h4 {
+          margin: 0 0 12px 0;
+          color: #374151;
+          font-size: 14px;
+        }
+
+        .instructions ul {
+          margin: 0;
+          padding-left: 20px;
+          color: #6b7280;
+          font-size: 13px;
+        }
+
+        .instructions li {
+          margin-bottom: 4px;
         }
       `}</style>
     </div>
   );
 };
 
-export default VisualExperience; 
+export default LivePreviewStatus; 
