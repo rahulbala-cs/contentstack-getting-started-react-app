@@ -1,6 +1,8 @@
 import Contentstack from "contentstack";
 import ContentstackLivePreview from "@contentstack/live-preview-utils";
 
+console.log("📦 SDK utils module loaded");
+
 const getLivePreviewHostByRegion = (region: string) => {
 	switch (region) {
 		case "US":
@@ -35,6 +37,8 @@ const getHostByRegion = (region: string) => {
 
 // This function should be called only ONCE in the application
 export const initializeContentstackSdk = () => {
+	console.log("🚀 Initializing Contentstack SDK...");
+	
 	const {
 		REACT_APP_CONTENTSTACK_API_KEY,
 		REACT_APP_CONTENTSTACK_DELIVERY_TOKEN,
@@ -42,6 +46,14 @@ export const initializeContentstackSdk = () => {
 		REACT_APP_CONTENTSTACK_REGION,
 		REACT_APP_CONTENTSTACK_PREVIEW_TOKEN
 	} = process.env;
+
+	console.log("📋 Environment variables:", {
+		API_KEY: REACT_APP_CONTENTSTACK_API_KEY ? "✅ Set" : "❌ Missing",
+		DELIVERY_TOKEN: REACT_APP_CONTENTSTACK_DELIVERY_TOKEN ? "✅ Set" : "❌ Missing",
+		ENVIRONMENT: REACT_APP_CONTENTSTACK_ENVIRONMENT ? "✅ Set" : "❌ Missing",
+		REGION: REACT_APP_CONTENTSTACK_REGION ? "✅ Set" : "❌ Missing",
+		PREVIEW_TOKEN: REACT_APP_CONTENTSTACK_PREVIEW_TOKEN ? "✅ Set" : "❌ Missing"
+	});
 
 	const region: Contentstack.Region | undefined = (function (
 		regionValue: string
@@ -63,11 +75,13 @@ export const initializeContentstackSdk = () => {
 	})(REACT_APP_CONTENTSTACK_REGION as string);
 
 	if (!region) {
+		console.error("❌ Invalid region provided in REACT_APP_CONTENTSTACK_REGION.");
 		throw new Error(
 			"Invalid region provided in REACT_APP_CONTENTSTACK_REGION."
 		);
 	}
 
+	console.log("⚙️ Creating Contentstack Stack...");
 	const Stack = Contentstack.Stack({
 		api_key: REACT_APP_CONTENTSTACK_API_KEY as string,
 		delivery_token: REACT_APP_CONTENTSTACK_DELIVERY_TOKEN as string,
@@ -80,6 +94,7 @@ export const initializeContentstackSdk = () => {
 		}
 	});
 
+	console.log("🔴 Initializing Live Preview SDK...");
 	ContentstackLivePreview.init({
 		stackSdk: Stack,
 		stackDetails: {
@@ -94,13 +109,18 @@ export const initializeContentstackSdk = () => {
 		tagsAsObject: true,
 	} as any);
 
+	console.log("✅ SDK initialized successfully!");
+	console.log("🔍 Live Preview version:", (window as any).ContentstackLivePreviewSDKVersion);
+	
 	return Stack;
 };
 
 export const onEntryChange = ContentstackLivePreview.onEntryChange;
 
 // The one and only Stack instance for the app
+console.log("🚀 Creating Stack instance...");
 const Stack = initializeContentstackSdk();
+console.log("📡 Stack instance created:", !!Stack);
 export default Stack;
 
 // Corrected getEditTags function
