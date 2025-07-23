@@ -111,6 +111,8 @@ export const initializeContentstackSdk = () => {
 
 	console.log("✅ SDK initialized successfully!");
 	console.log("🔍 Live Preview version:", (window as any).ContentstackLivePreviewSDKVersion);
+	console.log("🔍 ContentstackLivePreview object:", !!ContentstackLivePreview);
+	console.log("🔍 onEntryChange function:", typeof ContentstackLivePreview.onEntryChange);
 	
 	return Stack;
 };
