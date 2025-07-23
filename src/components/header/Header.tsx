@@ -9,14 +9,6 @@ import { fetchHeaderData } from "../../api";
 const Header: React.FC = () => {
   const headerData = useSelector((state: RootState) => state.main.headerData);
   
-  // DEBUG: Log what headerData looks like
-  console.log('🏠 Header Component - headerData structure:');
-  console.log('- Type:', typeof headerData);
-  console.log('- Keys:', headerData ? Object.keys(headerData) : 'No headerData');
-  console.log('- Full headerData:', headerData);
-  console.log('- Has uid?', headerData?.uid);
-  console.log('- Has $?', headerData?.$);
-  
   // FIXED: Access nested content from the full entry object
   const { logo, navigation_links } = headerData || {};
   const location = useLocation();

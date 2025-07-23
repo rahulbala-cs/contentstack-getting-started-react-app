@@ -87,24 +87,16 @@ export const fetchHeaderData = async (
   dispatch: Dispatch<any>
 ): Promise<void> => {
   const data = await getEntry(CONTENT_TYPES.HEADER);
-  console.log('📦 Header Data Structure:', data);
-  console.log('📦 Header data[0]:', data[0]);
-  console.log('📦 Header data[0] has uid?', data[0]?.uid);
-  console.log('📦 Header data[0] has $?', data[0]?.$);
-  // FIXED: Use data[0] instead of data[0][0] to preserve entry metadata
-  dispatch(setHeaderData(data[0]));
+  // Reverted to data[0][0] to correctly extract the entry object
+  dispatch(setHeaderData(data[0][0]));
 };
 
 export const fetchFooterData = async (
   dispatch: Dispatch<any>
 ): Promise<void> => {
   const data = await getEntry(CONTENT_TYPES.FOOTER);
-  console.log('📦 Footer Data Structure:', data);
-  console.log('📦 Footer data[0]:', data[0]);
-  console.log('📦 Footer data[0] has uid?', data[0]?.uid);
-  console.log('📦 Footer data[0] has $?', data[0]?.$);
-  // FIXED: Use data[0] instead of data[0][0] to preserve entry metadata
-  dispatch(setFooterData(data[0]));
+  // Reverted to data[0][0] to correctly extract the entry object
+  dispatch(setFooterData(data[0][0]));
 };
 
 export const fetchHomePageData = async (
